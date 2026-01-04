@@ -1,0 +1,58 @@
+{
+  "name": "focusmusic",
+  "version": "1.0.0",
+  "description": "Infinite generative focus music for deep work - Brain.fm style ambient electronic music in your terminal",
+  "author": "Petr Brzek",
+  "license": "MIT",
+  "keywords": [
+    "focus",
+    "music",
+    "generative",
+    "ambient",
+    "electronic",
+    "cli",
+    "terminal",
+    "productivity",
+    "deep-work",
+    "audio",
+    "synthesizer"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/petrbrzek/focusmusic"
+  },
+  "homepage": "https://github.com/petrbrzek/focusmusic#readme",
+  "bugs": {
+    "url": "https://github.com/petrbrzek/focusmusic/issues"
+  },
+  "type": "module",
+  "module": "src/index.tsx",
+  "bin": {
+    "focusmusic": "./src/index.tsx"
+  },
+  "files": [
+    "src"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "bun run src/index.tsx",
+    "dev": "bun run --watch src/index.tsx",
+    "simple": "bun run src/simple.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.7"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.68",
+    "@opentui/react": "^0.1.68",
+    "node-web-audio-api": "^1.0.7",
+    "react": "^19.2.3",
+    "simplex-noise": "^4.0.3"
+  }
+}
