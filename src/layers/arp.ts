@@ -238,7 +238,9 @@ export class ArpLayer implements ClockListener {
     if (releaseStart > time + attack + decay) {
       noteGain.gain.setValueAtTime(sustainLevel, releaseStart);
     }
-    noteGain.gain.exponentialRampToValueAtTime(0.001, time + noteDuration);
+    // Ramp to near-zero, then set to 0 to avoid clicks when oscillator stops
+    noteGain.gain.exponentialRampToValueAtTime(0.001, time + noteDuration - 0.005);
+    noteGain.gain.linearRampToValueAtTime(0, time + noteDuration);
     
     // Filter envelope
     noteFilter.frequency.setValueAtTime(preset.filterFreqStart, time);

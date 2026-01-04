@@ -132,10 +132,11 @@ export class BeatLayer implements ClockListener {
     osc.frequency.setValueAtTime(kick.startFreq, time);
     osc.frequency.exponentialRampToValueAtTime(kick.endFreq, time + kick.pitchDecay);
     
-    // Amplitude envelope
+    // Amplitude envelope - ramp to 0 at end to avoid clicks
     kickGain.gain.setValueAtTime(0, time);
     kickGain.gain.linearRampToValueAtTime(velocity, time + kick.attack);
-    kickGain.gain.exponentialRampToValueAtTime(0.001, time + kick.decay);
+    kickGain.gain.exponentialRampToValueAtTime(0.001, time + kick.decay - 0.005);
+    kickGain.gain.linearRampToValueAtTime(0, time + kick.decay);
     
     osc.connect(kickGain);
     kickGain.connect(this.distortion);
@@ -178,10 +179,11 @@ export class BeatLayer implements ClockListener {
     // Track nodes
     nodeCounter.create(2);
     
-    // Very short click
+    // Very short click - ramp to 0 at end to avoid clicks
     clickGain.gain.setValueAtTime(0, time);
     clickGain.gain.linearRampToValueAtTime(velocity, time + 0.001);
-    clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.012);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, time + 0.010);
+    clickGain.gain.linearRampToValueAtTime(0, time + 0.012);
     
     clickOsc.connect(clickGain);
     clickGain.connect(this.masterGain); // Bypass distortion for cleaner click
@@ -227,10 +229,11 @@ export class BeatLayer implements ClockListener {
     noiseFilter.connect(noiseGain);
     noiseGain.connect(this.distortion);
     
-    // Short burst
+    // Short burst - ramp to 0 at end to avoid clicks
     noiseGain.gain.setValueAtTime(0, time);
     noiseGain.gain.linearRampToValueAtTime(velocity * 0.5, time + 0.002);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, time + 0.035);
+    noiseGain.gain.linearRampToValueAtTime(0, time + 0.04);
     
     oscs.forEach(osc => {
       osc.start(time);
@@ -264,9 +267,11 @@ export class BeatLayer implements ClockListener {
     osc.frequency.setValueAtTime(kick.endFreq * 2, time);
     osc.frequency.exponentialRampToValueAtTime(kick.endFreq, time + 0.025);
     
+    // Ghost kick envelope - ramp to 0 at end to avoid clicks
     gain.gain.setValueAtTime(0, time);
     gain.gain.linearRampToValueAtTime(velocity * 0.3, time + 0.003);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.075);
+    gain.gain.linearRampToValueAtTime(0, time + 0.08);
     
     osc.connect(gain);
     gain.connect(this.masterGain);
@@ -310,9 +315,12 @@ export class BeatLayer implements ClockListener {
   }
 
   // Pulse sub-bass on beat
+  // Uses short ramp to avoid clicks from instant gain changes
   onBeat(beat: number, time: number) {
     const subLevel = this.kit.kick.subLevel * 0.2;
-    this.subGain.gain.setValueAtTime(subLevel * 1.3, time);
+    const attackTime = 0.005; // 5ms attack to avoid clicks
+    this.subGain.gain.setValueAtTime(subLevel, time);
+    this.subGain.gain.linearRampToValueAtTime(subLevel * 1.3, time + attackTime);
     this.subGain.gain.linearRampToValueAtTime(subLevel, time + 0.3);
   }
 

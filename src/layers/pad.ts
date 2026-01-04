@@ -166,11 +166,10 @@ export class PadLayer implements ClockListener {
     this.lastFilterUpdate = time;
     
     // Smooth filter movement via Perlin noise
+    // Use setTargetAtTime for exponential smoothing to avoid clicks
     const filterFreq = this.filterMod.getValue(time);
-    this.filter.frequency.setValueAtTime(
-      Math.max(200, Math.min(1200, filterFreq)),
-      time
-    );
+    const smoothedFreq = Math.max(200, Math.min(1200, filterFreq));
+    this.filter.frequency.setTargetAtTime(smoothedFreq, time, 0.05);
     
     // Subtle detune modulation on oscillators
     const detuneOffset = this.detuneMod.getValue(time);

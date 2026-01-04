@@ -161,9 +161,12 @@ export class Engine {
   }
 
   // Trigger sidechain ducking (called by kick)
+  // Uses short attack ramp to avoid clicks from instant gain changes
   triggerSidechain(time: number) {
-    this.sidechainGain.gain.setValueAtTime(this.duckAmount, time);
-    this.sidechainGain.gain.linearRampToValueAtTime(1, time + this.duckRelease);
+    const attackTime = 0.003; // 3ms attack to avoid clicks
+    this.sidechainGain.gain.setValueAtTime(1, time);
+    this.sidechainGain.gain.linearRampToValueAtTime(this.duckAmount, time + attackTime);
+    this.sidechainGain.gain.linearRampToValueAtTime(1, time + attackTime + this.duckRelease);
   }
 
   // Main bus for melodic layers (gets sidechained)

@@ -95,11 +95,10 @@ export class TextureLayer implements ClockListener {
     if (time - this.lastFilterUpdate < 0.1) return;
     this.lastFilterUpdate = time;
     
+    // Use setTargetAtTime for exponential smoothing to avoid clicks
     const filterFreq = this.filterMod.getValue(time);
-    this.filter.frequency.setValueAtTime(
-      Math.max(150, Math.min(1200, filterFreq)),
-      time
-    );
+    const smoothedFreq = Math.max(150, Math.min(1200, filterFreq));
+    this.filter.frequency.setTargetAtTime(smoothedFreq, time, 0.05);
   }
 
   stop() {
