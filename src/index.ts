@@ -65,6 +65,8 @@ function printHelp() {
   ${c.dim}Options:${c.reset}
     --bpm <number>      Set tempo (70-120, default: 88)
     --volume <number>   Master volume (0-100, default: 75)
+    --latency <mode>    Audio latency: interactive | balanced | playback (default: playback)
+    --diagnostics       Print scheduler headroom warnings (helps debug crackles)
     --help, -h          Show this help message
 
   ${c.dim}Controls:${c.reset}
@@ -177,6 +179,8 @@ async function main() {
     options: {
       bpm: { type: 'string' },
       volume: { type: 'string' },
+      latency: { type: 'string' },
+      diagnostics: { type: 'boolean' },
       help: { type: 'boolean', short: 'h' },
     },
   });
@@ -204,6 +208,31 @@ async function main() {
       process.exit(1);
     }
     config.volume = volume;
+  }
+
+  if (values.latency) {
+    const latency = values.latency.toLowerCase();
+    const allowedLatencies: AudioContextOptions['latencyHint'][] = [
+      'interactive',
+      'balanced',
+      'playback',
+    ];
+    if (allowedLatencies.includes(latency as AudioContextOptions['latencyHint'])) {
+      config.latencyHint = latency as AudioContextOptions['latencyHint'];
+    } else {
+      const latencyMs = Number(values.latency);
+      if (!isNaN(latencyMs) && latencyMs > 0) {
+        // Accept numeric values in milliseconds for advanced tuning
+        config.latencyHint = latencyMs / 1000;
+      } else {
+        console.error('Error: Latency must be interactive | balanced | playback or a positive number (ms)');
+        process.exit(1);
+      }
+    }
+  }
+
+  if (values.diagnostics) {
+    config.debug = true;
   }
 
   // Create initial layers

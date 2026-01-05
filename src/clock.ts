@@ -19,6 +19,11 @@ export class Clock {
   private ticksPerBeat = 4; // 16th notes
   private beatsPerBar = 4;
   private barsPerPhrase = 4;
+  private lookahead = 0.2; // seconds of scheduling headroom
+  private intervalMs = 25;
+  private warningThreshold = 0.03; // warn if scheduling closer than 30ms
+  private debug = false;
+  private lastWarning = 0;
   
   private currentTick = 0;
   private currentBeat = 0;
@@ -32,9 +37,15 @@ export class Clock {
   // Audio context for precise timing
   private getTime: () => number;
   
-  constructor(bpm: number, getTime: () => number) {
+  constructor(
+    bpm: number,
+    getTime: () => number,
+    options: { debug?: boolean; lookahead?: number } = {},
+  ) {
     this.bpm = bpm;
     this.getTime = getTime;
+    if (options.lookahead) this.lookahead = options.lookahead;
+    this.debug = !!options.debug;
   }
 
   get tickDuration(): number {
@@ -74,7 +85,7 @@ export class Clock {
     this.currentPhrase = 0;
 
     // Use setInterval for the main loop, but calculate precise times
-    const scheduleAhead = 0.1; // Look ahead 100ms
+    const scheduleAhead = this.lookahead; // Look ahead 200ms by default
     let lastScheduledTick = -1;
 
     const schedule = () => {
@@ -89,6 +100,7 @@ export class Clock {
       // Schedule any ticks we haven't scheduled yet
       for (let tick = lastScheduledTick + 1; tick <= targetTick; tick++) {
         const tickStartTime = this.startTime + tick * tickTime;
+        const headroom = tickStartTime - now;
         
         // Calculate beat/bar/phrase from tick
         const tickInBeat = tick % this.ticksPerBeat;
@@ -97,6 +109,17 @@ export class Clock {
         const bar = Math.floor(beat / this.beatsPerBar);
         const barInPhrase = bar % this.barsPerPhrase;
         const phrase = Math.floor(bar / this.barsPerPhrase);
+
+        if (this.debug && headroom < this.warningThreshold) {
+          // Warn once per second at most to avoid spamming.
+          if (now - this.lastWarning > 1) {
+            const msHeadroom = Math.max(0, Math.round(headroom * 1000));
+            console.log(
+              `  [audio] scheduling tight: ${msHeadroom}ms headroom at tick ${tick} (bpm=${this.bpm})`
+            );
+            this.lastWarning = now;
+          }
+        }
 
         // Fire events
         this.listeners.forEach(l => {
@@ -123,7 +146,7 @@ export class Clock {
     };
 
     // Run scheduler frequently for tight timing
-    this.intervalId = setInterval(schedule, 25);
+    this.intervalId = setInterval(schedule, this.intervalMs);
     schedule(); // Run immediately
   }
 

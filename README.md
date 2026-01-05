@@ -48,6 +48,9 @@ focusmusic --bpm 95
 # Set custom volume (0-100)
 focusmusic --volume 50
 
+# Use higher-latency playback and debug warnings if you hear crackles
+focusmusic --latency playback --diagnostics
+
 # Show help
 focusmusic --help
 ```

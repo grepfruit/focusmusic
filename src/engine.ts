@@ -13,6 +13,8 @@ export interface EngineConfig {
   bpm: number;
   volume: number;
   seed?: number;
+  latencyHint?: AudioContextOptions['latencyHint'];
+  debug?: boolean;
 }
 
 export interface MusicState {
@@ -51,10 +53,20 @@ export class Engine {
       bpm: config.bpm ?? 88,
       volume: config.volume ?? 75,
       seed: config.seed,
+      latencyHint: config.latencyHint,
+      debug: config.debug,
     };
 
-    this.ctx = new AudioContext();
-    this.clock = new Clock(this.config.bpm, () => this.ctx.currentTime);
+    this.ctx = new AudioContext({
+      // Playback bias gives the audio thread a larger buffer which helps
+      // avoid crackles on slower/contended machines.
+      latencyHint: this.config.latencyHint ?? 'playback',
+    });
+    this.clock = new Clock(
+      this.config.bpm,
+      () => this.ctx.currentTime,
+      { debug: !!this.config.debug }
+    );
     this.mods = new ModulationBank();
     
     // Initialize music state
