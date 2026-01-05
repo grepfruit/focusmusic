@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0] - 2026-01-05
+
+### Added
+- CLI flags for audio latency (`--latency`) and scheduler diagnostics (`--diagnostics`) to help avoid crackles and inspect timing headroom.
+
+### Changed
+- Default audio context latency hint now biases toward playback for smoother output on most systems.
+
 ## [1.1.0] - 2026-01-04
 
 ### Changed
