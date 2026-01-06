@@ -70,6 +70,7 @@ function printHelp() {
     --help, -h          Show this help message
 
   ${c.dim}Controls:${c.reset}
+    p                   Pause / Resume
     n / Space           Next track
     q / Escape          Quit
 
@@ -133,14 +134,16 @@ function showCursor() {
   process.stdout.write(c.showCursor);
 }
 
-function printTrackInfo(layers: AudioLayers, trackLength: number, status: 'playing' | 'switching' | 'stopping' = 'playing') {
+function printTrackInfo(layers: AudioLayers, trackLength: number, status: 'playing' | 'paused' | 'switching' | 'stopping' = 'playing') {
   const state = layers.engine.state;
   const config = layers.engine.config;
-  
-  const statusIcon = status === 'playing' ? `${c.green}▶${c.reset}` 
+
+  const statusIcon = status === 'playing' ? `${c.green}▶${c.reset}`
+                   : status === 'paused' ? `${c.yellow}⏸${c.reset}`
                    : status === 'switching' ? `${c.yellow}◆${c.reset}`
                    : `${c.red}■${c.reset}`;
-  const statusText = status === 'playing' ? 'Playing' 
+  const statusText = status === 'playing' ? 'Playing'
+                   : status === 'paused' ? 'Paused'
                    : status === 'switching' ? 'Switching...'
                    : 'Stopping...';
 
@@ -159,7 +162,7 @@ function printTrackInfo(layers: AudioLayers, trackLength: number, status: 'playi
   ${c.gray}Synth:${c.reset}  ${c.pink}${state.synthName || 'Loading...'}${c.reset}
 
   ${c.darkGray}────────────────────────────────${c.reset}
-  ${c.darkGray}[${c.purple}n${c.darkGray}]${c.reset} ${c.gray}Next${c.reset}  ${c.darkGray}[${c.purple}q${c.darkGray}]${c.reset} ${c.gray}Quit${c.reset}
+  ${c.darkGray}[${c.purple}p${c.darkGray}]${c.reset} ${c.gray}Pause${c.reset}  ${c.darkGray}[${c.purple}n${c.darkGray}]${c.reset} ${c.gray}Next${c.reset}  ${c.darkGray}[${c.purple}q${c.darkGray}]${c.reset} ${c.gray}Quit${c.reset}
 `);
 }
 
@@ -241,6 +244,7 @@ async function main() {
   let startTime = Date.now();
   let isQuitting = false;
   let isTransitioning = false;
+  let pausedTime = 0; // Accumulated time spent paused
 
   // Setup raw keyboard input
   readline.emitKeypressEvents(process.stdin);
@@ -258,11 +262,11 @@ async function main() {
 
   // Progress update interval
   const progressInterval = setInterval(() => {
-    if (isQuitting || isTransitioning) return;
-    
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    if (isQuitting || isTransitioning || layers.engine.paused) return;
+
+    const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
     updateProgress(elapsed, trackLength);
-    
+
     // Auto-advance when track ends
     if (elapsed >= trackLength) {
       handleNext();
@@ -272,19 +276,41 @@ async function main() {
   async function handleNext() {
     if (isQuitting || isTransitioning) return;
     isTransitioning = true;
-    
+
     printTrackInfo(layers, trackLength, 'switching');
-    
+
     await stopLayers(layers);
-    
+
     layers = createLayers(config);
     trackLength = getRandomTrackLength();
     startTime = Date.now();
+    pausedTime = 0;
     isTransitioning = false;
-    
+
     setTimeout(() => {
       printTrackInfo(layers, trackLength, 'playing');
     }, 150);
+  }
+
+  let pauseStartTime = 0;
+  function handlePause() {
+    if (isQuitting || isTransitioning) return;
+
+    if (layers.engine.paused) {
+      // Resume
+      pausedTime += Date.now() - pauseStartTime;
+      layers.engine.resume();
+      printTrackInfo(layers, trackLength, 'playing');
+      const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
+      updateProgress(elapsed, trackLength);
+    } else {
+      // Pause
+      pauseStartTime = Date.now();
+      layers.engine.pause();
+      printTrackInfo(layers, trackLength, 'paused');
+      const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
+      updateProgress(elapsed, trackLength);
+    }
   }
 
   async function handleQuit() {
@@ -310,11 +336,13 @@ async function main() {
   // Handle keypresses
   process.stdin.on('keypress', (_str, key) => {
     if (isQuitting) return;
-    
+
     if (key.name === 'q' || key.name === 'escape' || (key.ctrl && key.name === 'c')) {
       handleQuit();
     } else if (key.name === 'n' || key.name === 'space') {
       handleNext();
+    } else if (key.name === 'p') {
+      handlePause();
     }
   });
 

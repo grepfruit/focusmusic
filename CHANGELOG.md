@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.0] - 2026-01-06
+
+### Added
+- Pause/resume functionality with `p` key - suspends audio playback and clock timing
+
 ## [1.2.0] - 2026-01-05
 
 ### Added

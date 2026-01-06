@@ -29,10 +29,12 @@ export class Clock {
   private currentBeat = 0;
   private currentBar = 0;
   private currentPhrase = 0;
-  
+
   private listeners: ClockListener[] = [];
   private intervalId?: Timer;
   private startTime = 0;
+  private pausedAt = 0;
+  private isPaused = false;
   
   // Audio context for precise timing
   private getTime: () => number;
@@ -155,6 +157,29 @@ export class Clock {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
     }
+    this.isPaused = false;
+  }
+
+  pause() {
+    if (this.isPaused || !this.intervalId) return;
+    this.isPaused = true;
+    this.pausedAt = this.getTime();
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = undefined;
+    }
+  }
+
+  resume() {
+    if (!this.isPaused) return;
+    const pauseDuration = this.getTime() - this.pausedAt;
+    this.startTime += pauseDuration;
+    this.isPaused = false;
+    this.start();
+  }
+
+  get paused(): boolean {
+    return this.isPaused;
   }
 
   // Get current position info
